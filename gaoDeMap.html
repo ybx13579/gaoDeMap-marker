@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>高德地图多marker</title>
+</head>
+<style>
+*{
+    margin:0;
+    padding:0;
+}
+
+    /*高德地图*/
+    #mapContainer{
+        height:600px;
+    }
+    #tip {
+        background-color: #ddf;
+        color: #333;
+        border: 1px solid silver;
+        box-shadow: 3px 4px 3px 0px silver;
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        border-radius: 5px;
+        overflow: hidden;
+        line-height: 20px;
+    }
+    #tip input[type="text"] {
+        height: 25px;
+        border: 0;
+        padding-left: 5px;
+        width: 280px;
+        border-radius: 3px;
+        outline: none;
+    }
+    .doc_num_tip{
+        width:19px;
+        height:31px;
+        background:  url("https://webapi.amap.com/theme/v1.3/markers/n/mark_r.png") no-repeat center;
+        text-align: center;
+        font-size:12px;
+        color: #fff;
+    }
+
+    .marker-user{
+        position: absolute;
+        width: 30px;
+        height: 39px;
+        background: url(https://webapi.amap.com/theme/v1.3/images/newpc/poi-1.png) no-repeat  0px -58px;
+        cursor: pointer;
+    }
+
+
+</style>
+<body>
+<div id="mapContainer" ></div>
+<div id="tip">
+    <input type="text" id="keyword" name="keyword" value="请输入关键字：(选定后搜索)" onfocus='this.value=""'/>
+</div>
+</body>
+</html>
+<script src="http://libs.baidu.com/jquery/2.1.4/jquery.min.js"></script>
+<script src="https://webapi.amap.com/maps?v=1.4.8&key=ca7231edd8ba30a76f3118cad4776416"></script>
+<script src="mapData/marker.js"></script>
+<script type="text/javascript">
+
+$(document).ready(function () {
+
+    //地图
+    var map = new AMap.Map("mapContainer", {
+        resizeEnable: true,
+        center: [116.397428, 39.90923],     //地图中心点
+        zoom: 8,                            //地图显示的缩放级别
+        keyboardEnable: false
+    });
+    AMap.plugin(['AMap.Autocomplete','AMap.PlaceSearch'],function(){
+        var autoOptions = {
+            city: "北京",                    //城市，默认全国
+            input: "keyword"                //使用联想输入的input的id
+        };
+        autocomplete= new AMap.Autocomplete(autoOptions);
+        var placeSearch = new AMap.PlaceSearch({
+            city:'北京',
+            map:map
+        });
+        AMap.event.addListener(autocomplete, "select", function(e){
+            //TODO 针对选中的poi实现自己的功能
+            placeSearch.setCity(e.poi.adcode);
+            placeSearch.search(e.poi.name)
+        });
+    });
+    var markers = [];           //province见 marker.js
+
+
+    //Marker
+    for (var i = 0; i < provinces.length; i ++) {
+        var marker;
+        var docNumber = provinces[i].docNumber;
+        var docParentId = provinces[i].id;              //机构的id
+        var cityNum = provinces[i].cityNum;             //机构的城市的区号
+
+        var content= "<div class = 'doc_num_tip'>"+docNumber+"</div>";//docNumber为机构内的医生数量
+        marker = new AMap.Marker({
+            content: content,
+            position: provinces[i].center.split(','),
+            title: provinces[i].name,
+            docParentId:docParentId,
+            cityNum:cityNum,
+            map: map
+        });
+
+        //         //鼠标滑过展示marker的信息
+        //         AMap.event.addListener(marker,'mouseover',function (e) {
+        //             var docParentName= e.target.Mg.title;                            //机构的名称
+        //             var docParentNum= e.target.Mg.contentDom.innerText;              //机构的医生数量
+        // //            //创建信息窗体
+        // //            var infoWindow = new AMap.InfoWindow({
+        // //                content:docParentName+"<br/>"+docParentNum+'&nbsp;&nbsp;人' //信息窗体的内容
+        // //            });
+        // //            infoWindow.open(map,marker.getPosition());                     //信息窗体打开
+        // 		});
+
+        //鼠标点击展示机构医生详情
+        AMap.event.addListener(marker,'click',function (e) {
+            var docParentId= e.target.Mg.docParentId;                   //机构的id
+            var docParentName= e.target.Mg.title;                       //机构的名称
+            var docParentNum= e.target.Mg.contentDom.innerText;         //机构的医生数量
+            var cityNum= e.target.Mg.cityNum;         					//机构的城市区号
+
+            console.log("机构城市区号：" + cityNum);
+
+            //点击marker弹窗
+            alert("机构城市区号：" + cityNum)
+        });
+        markers.push(marker);
+    }
+
+    //代表用户位置的Marker
+    var userMarker = new AMap.Marker({
+        content: '<div class="marker-user"></div>',     //自定义点标记覆盖物内容
+        position:  [116.397428, 39.90923],              // 基点位置
+        offset: new AMap.Pixel(-17, -42)                // 相对于基点的偏移位置
+    });
+    map.add(userMarker);
+
+    map.setFitView();                                   //使所有的marker全部展现在屏幕中
+
+
+})
+</script>
